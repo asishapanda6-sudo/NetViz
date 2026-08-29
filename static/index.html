@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NetViz — Real-Time Network Traffic Visualizer</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 34'%3E%3Ccircle cx='17' cy='17' r='14' fill='%230a0e1a' stroke='%23e0a33e' stroke-width='2.5'/%3E%3Ccircle cx='17' cy='17' r='3.4' fill='%23e0a33e'/%3E%3Ccircle cx='26.5' cy='10' r='3' fill='%2357b8a0'/%3E%3Cpath d='M17 17 L26.5 10' stroke='%2357b8a0' stroke-width='1.6'/%3E%3Ccircle cx='8' cy='24' r='2.4' fill='%23e0a33e'/%3E%3Cpath d='M17 17 L8 24' stroke='%23e0a33e' stroke-width='1.6'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<header id="topbar">
+  <div id="brand">
+    <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true">
+      <defs>
+        <linearGradient id="lg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#57b8a0"/><stop offset="1" stop-color="#e0a33e"/>
+        </linearGradient>
+      </defs>
+      <circle cx="17" cy="17" r="14" fill="none" stroke="url(#lg)" stroke-width="2.5"/>
+      <circle cx="17" cy="17" r="3.4" fill="#e0a33e"/>
+      <circle cx="26.5" cy="10" r="3" fill="#57b8a0"/>
+      <path d="M17 17 L26.5 10" stroke="#57b8a0" stroke-width="1.6"/>
+      <circle cx="8" cy="24" r="2.4" fill="#e0a33e"/>
+      <path d="M17 17 L8 24" stroke="#e0a33e" stroke-width="1.6"/>
+    </svg>
+    <div>
+      <h1>NetViz</h1>
+      <span id="srcStatus">connecting…</span>
+    </div>
+  </div>
+
+  <div class="tbLabeled">
+    <span class="tbCap">WHERE TRAFFIC COMES FROM</span>
+    <div class="tbGroup" id="sourceGroup">
+      <select id="srcSelect" title="Traffic source">
+        <option value="sim">🧪 Simulation (demo traffic)</option>
+        <optgroup id="pcapGroup" label="PCAP replay"></optgroup>
+        <option value="pcap_custom">📁 PCAP file (custom path…)</option>
+        <option value="live">🔴 Live capture (needs root)</option>
+      </select>
+      <input id="pathInput" class="txt hidden" placeholder="/path/to/capture.pcap" spellcheck="false">
+      <input id="ifaceInput" class="txt hidden" placeholder="iface e.g. eth0" list="ifaceList" spellcheck="false">
+      <datalist id="ifaceList"></datalist>
+      <label id="loopWrap" class="chk hidden"><input type="checkbox" id="loopChk" checked> loop</label>
+      <button id="applySrc" class="btn primary">▶ Start</button>
+    </div>
+  </div>
+
+  <div class="tbLabeled">
+    <span class="tbCap">FIND A DEVICE</span>
+    <div class="tbGroup" id="searchGroup">
+      <div id="searchWrap">
+        <input id="nodeSearch" placeholder="🔍  search IP / country / company…  ( / )" spellcheck="false" autocomplete="off">
+        <div id="searchSug" class="hidden"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tbLabeled">
+    <span class="tbCap">VIEW</span>
+    <div class="tbGroup" id="viewGroup">
+      <button id="zoomOut" class="btn icon" title="Zoom out">−</button>
+      <button id="zoomIn" class="btn icon" title="Zoom in">+</button>
+      <button id="fitBtn" class="btn icon" title="Fit everything on screen (F)">⤢</button>
+      <button id="shotBtn" class="btn icon" title="Save this view as an image (PNG)">📷</button>
+      <button id="helpBtn" class="btn icon" title="Help — what am I looking at?">?</button>
+    </div>
+  </div>
+
+  <div class="tbLabeled">
+    <span class="tbCap">PLAYBACK</span>
+    <div class="tbGroup" id="playGroup">
+      <button id="pauseBtn" class="btn">⏸ Pause</button>
+      <label class="speedWrap" title="Speed of simulation / replay">
+        <span>speed</span>
+        <input type="range" id="speed" min="0.25" max="8" step="0.25" value="1">
+        <span id="speedVal">1×</span>
+      </label>
+      <button id="clearBtn" class="btn" title="Clear everything and start fresh">↺ Reset</button>
+    </div>
+  </div>
+
+  <div id="meters">
+    <div class="meter">
+      <div class="mRow"><b id="pps">0</b><span class="mCap">packets / sec</span></div>
+      <div class="mRow"><b id="bps">0</b><span class="mCap">current speed</span></div>
+    </div>
+    <canvas id="spark" width="150" height="40" title="Traffic over the last 90 seconds"></canvas>
+    <div class="meter small">
+      <div id="counts">0 devices · 0 connections</div>
+      <div id="totals">0 packets seen</div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <aside id="alertsPanel">
+    <div class="panelHead">
+      <h2>🚨 Threat Alerts</h2>
+      <span id="alertBadge" class="badge hidden">0</span>
+      <select id="alertFilter" title="Show only important alerts">
+        <option value="all">all</option>
+        <option value="high">urgent only</option>
+        <option value="med">urgent + medium</option>
+      </select>
+      <button id="csvBtn" class="btn tiny" title="Download alerts as a spreadsheet (CSV)">⬇ CSV</button>
+      <button id="clearAlerts" class="btn tiny" title="Clear the alerts list">clear</button>
+    </div>
+    <div id="alertList"><div class="empty">All clear — no threats detected yet.<br><small>8 automatic detectors are watching your traffic…</small></div></div>
+  </aside>
+
+  <div id="netWrap">
+    <canvas id="net"></canvas>
+    <div id="legend"></div>
+    <div id="tooltip" class="hidden"></div>
+    <div id="pausedOverlay" class="hidden">PAUSED</div>
+    <div id="hint">🔍 scroll = zoom &nbsp;·&nbsp; ✋ drag = move &nbsp;·&nbsp; 👆 click a bubble = full details &nbsp;·&nbsp; press <b>?</b> for help</div>
+  </div>
+
+  <aside id="infoPanel" class="hidden"></aside>
+</main>
+
+<!-- ---------- beginner tour ---------- -->
+<div id="welcome" class="hidden">
+  <div class="welcomeCard">
+    <h2>Welcome to NetViz 👋</h2>
+    <p class="wSub">Watch your network traffic move — and spot trouble at a glance.</p>
+    <div class="wRow">
+      <span class="wIcon">🔷</span>
+      <div><b>Every shape is a device.</b> Squares live <i>inside your network</i>; circles are servers <i>on the internet</i>. Bigger shape = more traffic.</div>
+    </div>
+    <div class="wRow">
+      <span class="wIcon">🌈</span>
+      <div><b>Every line is a connection.</b> The color shows the traffic type (teal = web, purple = DNS, red = SSH). The moving dots are live packets.</div>
+    </div>
+    <div class="wRow">
+      <span class="wIcon">🚨</span>
+      <div><b>Alerts find trouble for you.</b> If something looks like an attack — a port scan, a flood, malware "phoning home" — it appears in the left panel. <b>Click an alert</b> to jump straight to the suspect.</div>
+    </div>
+    <button id="welcomeGo" class="btn primary big">▶ Start watching</button>
+    <div class="wTip">Tip: click any bubble for its full details · press <b>?</b> anytime for help</div>
+  </div>
+</div>
+
+<!-- ---------- help / about ---------- -->
+<div id="helpModal" class="hidden">
+  <div class="modalCard">
+    <button class="close" id="helpClose">✕</button>
+    <h2>NetViz — help</h2>
+    <p>Live network traffic as an animated picture. <b>Shapes = devices (IPs)</b>,
+    <b>lines = connections</b>, <b>line color = traffic type</b>. Click any device for details.</p>
+    <button id="tourBtn" class="btn" style="margin-bottom:6px">👋 Show beginner tour again</button>
+
+    <h3>Where the traffic comes from</h3>
+    <ul>
+      <li><b>🧪 Simulation</b> — fake demo traffic with built-in attacks (port scan, SYN flood, malware check-in, bulk transfer). Best way to explore — nothing to set up.</li>
+      <li><b>📼 PCAP replay</b> — plays a recorded capture file (.pcap) at 0.25×–8× speed, like replaying a video.</li>
+      <li><b>🔴 Live capture</b> — watches your <i>real</i> network right now (needs admin/root permission).</li>
+    </ul>
+
+    <h3>What the alerts mean</h3>
+    <table class="rulesTable">
+      <tr><td>🎯 Port scan</td><td>One device is trying every "door" (port) on another — attackers do this to find a way in</td></tr>
+      <tr><td>📡 Host sweep</td><td>One device is quickly touching many devices — mapping out the network</td></tr>
+      <tr><td>⚡ SYN flood</td><td>A flood of fake connection requests trying to knock a device offline (DoS)</td></tr>
+      <tr><td>📶 C2 beaconing</td><td>A device "phoning home" to the same server at fixed intervals — classic malware behaviour</td></tr>
+      <tr><td>☠️ Malicious IP</td><td>Traffic with an IP from the known-attackers list (<code>blocklist.txt</code>)</td></tr>
+      <tr><td>🌍 Unusual destination</td><td>Traffic going to an anonymizer/proxy — an odd place for normal traffic</td></tr>
+      <tr><td>📈 Traffic spike</td><td>Sudden jump several times above the normal level of the last 30s</td></tr>
+      <tr><td>👁 Watch</td><td>Device with unusually many contacts (25+) or open ports (60+)</td></tr>
+    </table>
+
+    <h3>Reading the picture</h3>
+    <ul>
+      <li><span class="shapeSq"></span> device inside your network · <span class="shapeCi"></span> server on the internet — size = traffic volume</li>
+      <li>Moving dots on a line = packets flowing right now; a <b>pulsing</b> line = active connection</li>
+      <li><span class="ringRed"></span> red pulsing ring = suspicious device · <span class="ringAmber"></span> amber ring = worth watching</li>
+      <li>🌍 country flags appear next to internet servers (via ip-api.com)</li>
+    </ul>
+
+    <h3>Keyboard shortcuts</h3>
+    <p><b>/</b> search · <b>F</b> fit view · <b>Space</b> pause/resume · <b>Esc</b> close ·
+       mouse scroll = zoom · drag background = move · drag a bubble = reposition it</p>
+  </div>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

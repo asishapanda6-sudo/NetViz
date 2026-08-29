@@ -1,0 +1,9 @@
+# NetViz static blocklist — one IP or CIDR per line, '#' se comment.
+# File ko edit karke save karo — dashboard me 5 second me auto-reload ho jata hai.
+# Format examples:
+#   185.220.101.7          single IP
+#   203.0.113.0/24         whole subnet
+#
+# --- known C2 / demo entries ---
+185.220.101.7        # simulated C2 server (simulator iska beacon bhejta hai)
+198.51.100.66        # example malicious host
