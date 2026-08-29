@@ -1,56 +1,58 @@
-# NetViz — Design System ("Ember NOC")
+# NetViz — Design System ("Neon HUD")
 
-Design goal: a **network operations terminal** look — warm charcoal surfaces,
-one amber instrument accent, flat panels with hairline borders, mono-caps
-labels. Deliberately avoids the generic "dark blue + purple/cyan glow" combo.
+Design goal: a **sci-fi movie operations console** — the "target acquired"
+interface from a cyberpunk film. Void black, neon cyan/magenta/lime, CRT
+scanlines, a rotating radar sweep, angular cut-corner panels, HUD corner
+brackets, a glitching wordmark. Here, glow *is* the language: threats light
+up the screen like a movie hacking scene.
 
 ## Palette
 
 | Token | Hex | Use |
 |---|---|---|
-| `--bg` | `#14110d` | page / graph background (warm near-black) |
-| `--panel` | `#1a1611` | panels (alerts, top bar) |
-| `--panel-2` | `#201b14` | cards, inputs, alert rows |
-| `--field` | `#241f17` | form fields |
-| `--line` | `#322c22` | borders |
-| `--ink` | `#e8e2d4` | primary text (warm off-white) |
-| `--ink-dim` | `#a89f8d` | secondary text |
-| `--ink-faint` | `#6e685a` | captions, hints |
-| `--accent` | `#e0a33e` | **amber** — brand, primary buttons, IP headings, sparkline |
-| `--accent-ink` | `#211809` | text on amber |
-| `--ok` | `#7fb069` | sage green — "normal" status |
-| `--danger` | `#e05252` | HIGH severity, suspicious rings |
-| `--warn` | `#d9822b` | MEDIUM severity, watch rings |
-| `--info` | `#6d9bc9` | steel blue — info alerts |
-| `--sage` | `#57b8a0` | internal-network nodes & chips |
-| `--sand` | `#d9b36a` | external/internet nodes & chips |
+| `--bg` | `#04060b` | void black (page + graph) |
+| `--panel` | `rgba(7,12,20,.92)` | console panels |
+| `--rim` | `#12384a` | panel borders (dark cyan steel) |
+| `--ink` | `#dff6ff` | ice-white text |
+| `--ink-dim` | `#8fb3c6` | secondary text |
+| `--cyan` | `#00f0ff` | **primary neon** — brand, meters, rings, sweep |
+| `--magenta` | `#ff2ec4` | external/internet nodes, DNS |
+| `--lime` | `#b6ff00` | "normal" status, UDP |
+| `--danger` | `#ff3860` | HIGH severity, target-lock rings |
+| `--warn` | `#ffb800` | MEDIUM severity, watch rings |
 
-## Data colors (protocol lines on the graph)
+## Signature effects
 
-Harmonized, medium-saturation, warm-leaning:
+- **CRT scanlines** — `body::after` repeating-linear-gradient over the whole
+  app (pointer-events: none). The screen feels physical.
+- **Radar sweep** — a fading cyan beam rotates from the graph center
+  (26 fanned lines, alpha falloff) — drawn in canvas each frame.
+- **Neon orbs** — nodes are void-black cores with a glowing protocol-colored
+  ring (`shadowBlur`) and a hot center dot; internal hosts are **hexagons**,
+  external are circles.
+- **Target lock** — suspicious nodes get a **rotating dashed red ring** plus a
+  pulsing outer ring, like a missile lock in a movie.
+- **Neon beams** — edges drawn twice: wide translucent glow pass + thin bright
+  core pass; packet particles glow as they travel.
+- **Glitch wordmark** — the NETVIZ title occasionally splits into cyan and
+  magenta offset layers (pure CSS, `clip-path` slices + steps() animation).
+- **HUD chrome** — cut-corner buttons (`clip-path`), corner brackets on the
+  info card and help modal (`::before/::after` L-borders), glow-on-hover.
 
-`DNS #a890c8 · HTTPS #57b8a0 · HTTP #e0a33e · SSH #e05252 · TCP #6d9bc9 ·
-UDP #9cb85e · ICMP #d475a8 · RSYNC #d4bd6e · NTP #7ec4c9 · mDNS #c98fc4 ·
-mail-family #d98a5f · DB #a876c9 · OTHER #8d8778`
+## Performance guards
 
-## Typography rules
+Node glow (`shadowBlur`) auto-disables above 180 nodes; the radar sweep is 26
+cheap lines; edges use two-pass strokes instead of per-edge shadows.
 
-- Section headers / captions / severities: **ui-monospace, UPPERCASE, tracked
-  out** (`letter-spacing ≈ 1px`) — gives the "instrument" feel.
-- IPs, ports, numbers: monospace, tabular numerals.
-- Body copy: system sans, warm off-white.
+## Data colors (neon, high-saturation on void)
 
-## Surface rules
-
-- Flat fills only — **no gradients, no glass blur, no neon glow**.
-- 6–10 px radii, 1 px hairline borders (`--line`), shadows only for floating
-  layers (tooltip, modals, info panel).
-- One accent color (amber) used sparingly: brand, primary action, IP address,
-  throughput sparkline. Everything else stays neutral so *alert colors pop*.
+`DNS #ff2ec4 · HTTPS #00f0ff · HTTP #ffb800 · SSH #ff3860 · TCP #4d7cff ·
+UDP #b6ff00 · ICMP #ff6ec7 · RSYNC #ffd166 · NTP #00ffd0 · mDNS #c77dff ·
+mail-family #ff9e7a · DB #d08bff · OTHER #5f7d95`
 
 ## Where what lives
 
-- All tokens: `:root` at the top of `static/style.css`
-- Protocol/data colors: `PROTO_COLORS` in `static/app.js`
-- Canvas (graph) colors: `render()` in `static/app.js` (background vignette,
-  grid dots, rings) — kept in sync with the CSS tokens above.
+- Tokens + effects: `static/style.css` (`body::before/::after`, glitch keyframes)
+- Protocol colors: `PROTO_COLORS` in `static/app.js`
+- Radar sweep / neon orbs / target lock / beam edges: `render()` in
+  `static/app.js`

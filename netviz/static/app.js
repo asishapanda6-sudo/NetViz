@@ -46,16 +46,16 @@ function downloadBlob(blob, name) {
 }
 
 const PROTO_COLORS = {
-  DNS: '#ff2ec4', HTTPS: '#00f0ff', HTTP: '#ffb800', SSH: '#ff3860',
-  ICMP: '#ff6ec7', TCP: '#4d7cff', UDP: '#b6ff00', RSYNC: '#ffd166',
-  SMB: '#ffd166', NTP: '#00ffd0', mDNS: '#c77dff', MySQL: '#d08bff',
-  Postgres: '#d08bff', Redis: '#d08bff', SMTP: '#ff9e7a', IMAP: '#ff9e7a',
-  IMAPS: '#ff9e7a', POP3: '#ff9e7a', FTP: '#ff9e7a', TELNET: '#ff9e7a',
-  DHCP: '#b6ff00', SNMP: '#b6ff00', LDAP: '#ff9e7a', LDAPS: '#ff9e7a',
-  NETBIOS: '#ff9e7a', OTHER: '#5f7d95',
+  DNS: '#7c5cb0', HTTPS: '#0e7c9c', HTTP: '#c2810a', SSH: '#c0392b',
+  ICMP: '#ad4a86', TCP: '#2f639f', UDP: '#557c2f', RSYNC: '#8a6d3b',
+  SMB: '#8a6d3b', NTP: '#2d7d78', mDNS: '#8d5aa8', MySQL: '#6f4fa0',
+  Postgres: '#6f4fa0', Redis: '#6f4fa0', SMTP: '#b25b3f', IMAP: '#b25b3f',
+  IMAPS: '#b25b3f', POP3: '#b25b3f', FTP: '#b25b3f', TELNET: '#b25b3f',
+  DHCP: '#6b8a3f', SNMP: '#6b8a3f', LDAP: '#b25b3f', LDAPS: '#b25b3f',
+  NETBIOS: '#b25b3f', OTHER: '#6e7681',
 };
 const protoColor = (p) => PROTO_COLORS[p] || PROTO_COLORS.OTHER;
-const SEV_COLORS = { high: '#ff3860', medium: '#ffb800', info: '#00f0ff' };
+const SEV_COLORS = { high: '#d7263d', medium: '#b0730a', info: '#2f639f' };
 const KIND_ICONS = {
   port_scan: '🎯', host_sweep: '📡', traffic_spike: '📈', syn_flood: '⚡',
   beaconing: '📶', blocklist: '☠️', geo_flag: '🌍', replay: '▶', error: '⛔', info: 'ℹ',
@@ -272,32 +272,19 @@ function qPoint(g, t) {
 }
 
 function render(nowMs, dt) {
-  // ---- screen space: void background
+  // ---- screen space: background
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   ctx.clearRect(0, 0, W, H);
   const grad = ctx.createRadialGradient(W / 2, H / 2, 40, W / 2, H / 2, Math.max(W, H) * 0.75);
-  grad.addColorStop(0, 'rgba(0, 70, 95, 0.16)');
-  grad.addColorStop(1, 'rgba(4, 6, 11, 0)');
+  grad.addColorStop(0, 'rgba(255, 255, 255, 0.5)');
+  grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, H);
-
-  // rotating radar sweep (screen space)
-  const sweepAng = nowMs * 0.00055;
-  for (let i = 0; i < 26; i++) {
-    const a = sweepAng - i * 0.022;
-    ctx.strokeStyle = 'rgba(0,240,255,' + (0.075 * (1 - i / 26)).toFixed(4) + ')';
-    ctx.lineWidth = 1.5;
-    const L = Math.max(W, H);
-    ctx.beginPath();
-    ctx.moveTo(W / 2, H / 2);
-    ctx.lineTo(W / 2 + Math.cos(a) * L, H / 2 + Math.sin(a) * L);
-    ctx.stroke();
-  }
 
   // world-space dot grid
   const gs = 60 * view.scale;
   if (gs >= 16) {
-    ctx.fillStyle = 'rgba(0, 240, 255, 0.09)';
+    ctx.fillStyle = 'rgba(28, 30, 34, 0.10)';
     const ox = ((view.ox % gs) + gs) % gs;
     const oy = ((view.oy % gs) + gs) % gs;
     for (let x = ox; x < W; x += gs) {
@@ -307,35 +294,25 @@ function render(nowMs, dt) {
     }
   }
 
-  // ---- world space: the network
+  // ---- world space: graph
   ctx.setTransform(DPR * view.scale, 0, 0, DPR * view.scale, DPR * view.ox, DPR * view.oy);
-  const glowOK = nodes.size <= 180;
 
-  // neon beam edges (glow pass + bright core pass)
-  ctx.lineCap = 'round';
   for (const e of edges.values()) {
     const g = edgeGeom(e);
     if (!g) continue;
     const age = serverNow - e.last;
     let alpha = age < 2 ? 1 : Math.max(0.06, 1 - age / 30);
     if (age < 3) alpha *= 0.72 + 0.28 * Math.sin(nowMs * 0.006 + e.hash * 6.28); // pulsing line
-    const baseW = 0.6 + Math.min(3, Math.log2(1 + (e.bytes || 0) / 2500) / 2);
     ctx.strokeStyle = protoColor(e.proto);
-    ctx.globalAlpha = alpha * 0.16;                       // outer glow
-    ctx.lineWidth = (baseW * 3.2) / Math.max(0.4, view.scale * 0.9);
-    ctx.beginPath();
-    ctx.moveTo(g.a.x, g.a.y);
-    ctx.quadraticCurveTo(g.cx, g.cy, g.b.x, g.b.y);
-    ctx.stroke();
-    ctx.globalAlpha = alpha * 0.95;                       // bright core
-    ctx.lineWidth = baseW / Math.max(0.4, view.scale * 0.9);
+    ctx.globalAlpha = alpha * 0.85;
+    ctx.lineWidth = (0.6 + Math.min(3, Math.log2(1 + (e.bytes || 0) / 2500) / 2)) / Math.max(0.4, view.scale * 0.9);
     ctx.beginPath();
     ctx.moveTo(g.a.x, g.a.y);
     ctx.quadraticCurveTo(g.cx, g.cy, g.b.x, g.b.y);
     ctx.stroke();
   }
+  ctx.globalAlpha = 1;
 
-  // glowing packet particles
   for (let i = pulses.length - 1; i >= 0; i--) {
     const p = pulses[i];
     const g = edgeGeom(p.e);
@@ -347,13 +324,10 @@ function render(nowMs, dt) {
     ctx.globalAlpha = 0.22;
     ctx.beginPath(); ctx.arc(pt.x, pt.y, 5, 0, 6.283); ctx.fill();
     ctx.globalAlpha = 0.95;
-    if (glowOK) { ctx.shadowColor = p.color; ctx.shadowBlur = 9; }
-    ctx.beginPath(); ctx.arc(pt.x, pt.y, 2.4, 0, 6.283); ctx.fill();
-    ctx.shadowBlur = 0;
+    ctx.beginPath(); ctx.arc(pt.x, pt.y, 2, 0, 6.283); ctx.fill();
   }
   ctx.globalAlpha = 1;
 
-  // neon orbs
   ctx.font = '11px ui-monospace, Menlo, Consolas, monospace';
   ctx.textAlign = 'center';
   for (const n of nodes.values()) {
@@ -362,21 +336,13 @@ function render(nowMs, dt) {
     const flash = n.flashUntil > nowMs;
 
     if (n.risk && n.risk.level === 'suspicious') {
-      // target lock: rotating dashed ring + pulsing outer ring
-      ctx.strokeStyle = '#ff3860';
-      if (glowOK) { ctx.shadowColor = '#ff3860'; ctx.shadowBlur = 12; }
-      ctx.globalAlpha = 0.9;
-      ctx.lineWidth = 1.8 / view.scale;
-      ctx.setLineDash([7, 5]);
-      ctx.lineDashOffset = -nowMs * 0.02;
-      ctx.beginPath(); ctx.arc(n.x, n.y, n.r + 9, 0, 6.283); ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.globalAlpha = 0.35 + 0.35 * Math.sin(nowMs * 0.008);
-      ctx.beginPath(); ctx.arc(n.x, n.y, n.r + 14, 0, 6.283); ctx.stroke();
-      ctx.shadowBlur = 0;
+      ctx.strokeStyle = '#d7263d';
+      ctx.globalAlpha = 0.5 + 0.5 * Math.sin(nowMs * 0.008);
+      ctx.lineWidth = 2 / view.scale;
+      ctx.beginPath(); ctx.arc(n.x, n.y, n.r + 6 + 2 * Math.sin(nowMs * 0.008), 0, 6.283); ctx.stroke();
       ctx.globalAlpha = 1;
     } else if (n.risk && n.risk.level === 'watch') {
-      ctx.strokeStyle = '#ffb800';
+      ctx.strokeStyle = '#b0730a';
       ctx.globalAlpha = 0.75;
       ctx.lineWidth = 1.6 / view.scale;
       ctx.beginPath(); ctx.arc(n.x, n.y, n.r + 5, 0, 6.283); ctx.stroke();
@@ -390,40 +356,40 @@ function render(nowMs, dt) {
       ctx.globalAlpha = 1;
     }
     if (n === selected) {
-      ctx.strokeStyle = '#00f0ff';
+      ctx.strokeStyle = '#1c1e22';
       ctx.setLineDash([4 / view.scale, 3 / view.scale]);
       ctx.lineWidth = 1.4 / view.scale;
       ctx.beginPath(); ctx.arc(n.x, n.y, n.r + 8, 0, 6.283); ctx.stroke();
       ctx.setLineDash([]);
     }
 
-    // neon orb: void core + glowing protocol ring + hot center (internal = hexagon)
-    ctx.fillStyle = 'rgba(4, 8, 14, 0.92)';
+    // technical node: white plate, colored ring, ink core dot
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#ffffff';
     ctx.beginPath();
     if (n.internal) {
-      const R = n.r * 1.22;
-      ctx.moveTo(n.x + R, n.y);
-      for (let k = 1; k < 6; k++) {
-        const a = Math.PI / 3 * k;
-        ctx.lineTo(n.x + R * Math.cos(a), n.y + R * Math.sin(a));
-      }
+      const s = n.r * 1.7, rr = 3, x = n.x - s / 2, y = n.y - s / 2;
+      ctx.moveTo(x + rr, y);
+      ctx.arcTo(x + s, y, x + s, y + s, rr);
+      ctx.arcTo(x + s, y + s, x, y + s, rr);
+      ctx.arcTo(x, y + s, x, y, rr);
+      ctx.arcTo(x, y, x + s, y, rr);
       ctx.closePath();
     } else {
       ctx.arc(n.x, n.y, n.r, 0, 6.283);
     }
     ctx.fill();
-    if (glowOK) { ctx.shadowColor = col; ctx.shadowBlur = 16; }
-    ctx.lineWidth = (n === hovered || n === selected ? 2.6 : 1.8) / view.scale;
+    ctx.lineWidth = (n === hovered || n === selected ? 2.4 : 1.6) / view.scale;
     ctx.strokeStyle = col;
     ctx.stroke();
-    ctx.shadowBlur = 0;
+    // ink core dot shows the node's dominant protocol
     ctx.fillStyle = col;
     ctx.beginPath();
-    ctx.arc(n.x, n.y, Math.max(1.8, n.r * 0.4), 0, 6.283);
+    ctx.arc(n.x, n.y, Math.max(1.6, n.r * 0.34), 0, 6.283);
     ctx.fill();
 
     if (n === hovered || n === selected || n.r > 15 || labelSet.has(n.ip)) {
-      ctx.fillStyle = 'rgba(200, 245, 255, 0.92)';
+      ctx.fillStyle = 'rgba(28, 30, 34, 0.88)';
       const flag = n.geo && n.geo.code ? ' ' + flagOf(n.geo.code) : '';
       ctx.fillText(n.ip + flag, n.x, n.y + n.r + 13);
     }
@@ -566,7 +532,7 @@ function renderSuggestions() {
     const div = document.createElement('div');
     div.className = 'sugItem';
     const risk = n.risk ? n.risk.level : 'normal';
-    const rc = risk === 'suspicious' ? '#ff3860' : risk === 'watch' ? '#ffb800' : '#b6ff00';
+    const rc = risk === 'suspicious' ? '#d7263d' : risk === 'watch' ? '#b0730a' : '#2e7d4f';
     const geo = n.geo || {};
     const meta = (geo.country ? flagOf(geo.code) + ' ' + geo.country + ' · ' : '') + humanBytes(n.bytes);
     div.innerHTML = `<span class="riskDot" style="background:${rc}"></span>` +
@@ -636,7 +602,7 @@ function renderInfo(ip, fetchDetail) {
   }
 
   if (risk.reasons && risk.reasons.length) {
-    html += `<div class="miniAlert" style="--sev:${risk.level === 'suspicious' ? '#ff3860' : '#ffb800'}"><span class="t">${esc(risk.reasons.join(' · '))}</span></div>`;
+    html += `<div class="miniAlert" style="--sev:${risk.level === 'suspicious' ? '#d7263d' : '#b0730a'}"><span class="t">${esc(risk.reasons.join(' · '))}</span></div>`;
   }
   html += `
     <div class="grid">
@@ -705,7 +671,7 @@ function renderAlerts(alerts) {
     if (a.id > maxAlertId) {
       maxAlertId = a.id;
       if (a.severity === 'high') document.body.animate(
-        [{ boxShadow: 'inset 0 0 140px rgba(255,56,96,.55)' }, { boxShadow: 'inset 0 0 140px rgba(255,56,96,0)' }],
+        [{ boxShadow: 'inset 0 0 120px rgba(215,38,61,.35)' }, { boxShadow: 'inset 0 0 120px rgba(215,38,61,0)' }],
         { duration: 1400 });
     }
   }
@@ -773,9 +739,9 @@ $('#csvBtn').onclick = exportCSV;
 function exportPNG() {
   // draw caption then grab the canvas
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-  ctx.fillStyle = 'rgba(2,8,14,.8)';
+  ctx.fillStyle = 'rgba(255,255,255,.85)';
   ctx.fillRect(W - 330, H - 34, 322, 22);
-  ctx.fillStyle = 'rgba(0,240,255,.9)';
+  ctx.fillStyle = 'rgba(28,30,34,.9)';
   ctx.font = '11px system-ui, sans-serif';
   ctx.textAlign = 'right';
   ctx.fillText(`NetViz · ${nodes.size} nodes · ${(latest.stats && latest.stats.total_pkts || 0).toLocaleString()} pkts · ${new Date().toLocaleString()}`, W - 14, H - 19);
@@ -824,11 +790,11 @@ function renderMeters() {
       const y = c.height - 3 - (h[1] / maxB) * (c.height - 6);
       i ? g.lineTo(x, y) : g.moveTo(x, y);
     });
-    g.strokeStyle = '#00f0ff';
+    g.strokeStyle = '#1c1e22';
     g.lineWidth = 1.4;
     g.stroke();
     g.lineTo(c.width - 2, c.height); g.lineTo(2, c.height); g.closePath();
-    g.fillStyle = 'rgba(0,240,255,0.12)';
+    g.fillStyle = 'rgba(28,30,34,0.08)';
     g.fill();
   }
 }
@@ -968,8 +934,8 @@ function buildLegend() {
     const col = p === 'other' ? PROTO_COLORS.OTHER : protoColor(p);
     return `<span class="legendItem"><span class="legendBar" style="background:${col}"></span>${p}</span>`;
   }).join('')
-    + '<span class="legendItem"><span style="width:9px;height:9px;border:1.5px solid #00f0ff;border-radius:2px;display:inline-block"></span>inside network</span>'
-    + '<span class="legendItem"><span style="width:9px;height:9px;border:1.5px solid #ff2ec4;border-radius:50%;display:inline-block"></span>internet server</span>'
+    + '<span class="legendItem"><span style="width:9px;height:9px;border:1.5px solid #2f639f;border-radius:2px;display:inline-block"></span>inside network</span>'
+    + '<span class="legendItem"><span style="width:9px;height:9px;border:1.5px solid #6e7681;border-radius:50%;display:inline-block"></span>internet server</span>'
     + '<span class="legendItem"><span class="ringRed"></span>suspicious</span>'
     + '<span class="legendItem"><span class="ringAmber"></span>worth watching</span>';
 }

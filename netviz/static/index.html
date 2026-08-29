@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>NetViz — Real-Time Network Traffic Visualizer</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 34'%3E%3Ccircle cx='17' cy='17' r='14' fill='%230a0e1a' stroke='%23ff2ec4' stroke-width='2.5'/%3E%3Ccircle cx='17' cy='17' r='3.4' fill='%23ff2ec4'/%3E%3Ccircle cx='26.5' cy='10' r='3' fill='%2300f0ff'/%3E%3Cpath d='M17 17 L26.5 10' stroke='%2300f0ff' stroke-width='1.6'/%3E%3Ccircle cx='8' cy='24' r='2.4' fill='%23ff2ec4'/%3E%3Cpath d='M17 17 L8 24' stroke='%23ff2ec4' stroke-width='1.6'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 34'%3E%3Ccircle cx='17' cy='17' r='14' fill='%230a0e1a' stroke='%23d7263d' stroke-width='2.5'/%3E%3Ccircle cx='17' cy='17' r='3.4' fill='%23d7263d'/%3E%3Ccircle cx='26.5' cy='10' r='3' fill='%231c1e22'/%3E%3Cpath d='M17 17 L26.5 10' stroke='%231c1e22' stroke-width='1.6'/%3E%3Ccircle cx='8' cy='24' r='2.4' fill='%23d7263d'/%3E%3Cpath d='M17 17 L8 24' stroke='%23d7263d' stroke-width='1.6'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
@@ -14,15 +14,15 @@
     <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true">
       <defs>
         <linearGradient id="lg" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stop-color="#00f0ff"/><stop offset="1" stop-color="#ff2ec4"/>
+          <stop offset="0" stop-color="#1c1e22"/><stop offset="1" stop-color="#d7263d"/>
         </linearGradient>
       </defs>
       <circle cx="17" cy="17" r="14" fill="none" stroke="url(#lg)" stroke-width="2.5"/>
-      <circle cx="17" cy="17" r="3.4" fill="#ff2ec4"/>
-      <circle cx="26.5" cy="10" r="3" fill="#00f0ff"/>
-      <path d="M17 17 L26.5 10" stroke="#00f0ff" stroke-width="1.6"/>
-      <circle cx="8" cy="24" r="2.4" fill="#ff2ec4"/>
-      <path d="M17 17 L8 24" stroke="#ff2ec4" stroke-width="1.6"/>
+      <circle cx="17" cy="17" r="3.4" fill="#d7263d"/>
+      <circle cx="26.5" cy="10" r="3" fill="#1c1e22"/>
+      <path d="M17 17 L26.5 10" stroke="#1c1e22" stroke-width="1.6"/>
+      <circle cx="8" cy="24" r="2.4" fill="#d7263d"/>
+      <path d="M17 17 L8 24" stroke="#d7263d" stroke-width="1.6"/>
     </svg>
     <div>
       <h1>NetViz</h1>
@@ -97,19 +97,15 @@
 <main>
   <aside id="alertsPanel">
     <div class="panelHead">
-      <div class="phTitle">
-        <h2>🚨 Threat Alerts</h2>
-        <span id="alertBadge" class="badge hidden">0</span>
-      </div>
-      <div class="phTools">
-        <select id="alertFilter" title="Show only important alerts">
-          <option value="all">all</option>
-          <option value="high">urgent only</option>
-          <option value="med">urgent + medium</option>
-        </select>
-        <button id="csvBtn" class="btn tiny" title="Download alerts as a spreadsheet (CSV)">⬇ CSV</button>
-        <button id="clearAlerts" class="btn tiny" title="Clear the alerts list">clear</button>
-      </div>
+      <h2>🚨 Threat Alerts</h2>
+      <span id="alertBadge" class="badge hidden">0</span>
+      <select id="alertFilter" title="Show only important alerts">
+        <option value="all">all</option>
+        <option value="high">urgent only</option>
+        <option value="med">urgent + medium</option>
+      </select>
+      <button id="csvBtn" class="btn tiny" title="Download alerts as a spreadsheet (CSV)">⬇ CSV</button>
+      <button id="clearAlerts" class="btn tiny" title="Clear the alerts list">clear</button>
     </div>
     <div id="alertList"><div class="empty">All clear — no threats detected yet.<br><small>8 automatic detectors are watching your traffic…</small></div></div>
   </aside>
